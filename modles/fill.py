@@ -6,12 +6,12 @@ import numpy as np
 
 def get_img_list(dir, firelist, ext=None):
     newdir = dir
-    if os.path.isfile(dir):  # 如果是文件
+    if os.path.isfile(dir):  
         if ext is None:
             firelist.append(dir)
         elif ext in dir[-3:]:
             firelist.append(dir)
-    elif os.path.isdir(dir):  # 如果是目录
+    elif os.path.isdir(dir):  
         for s in os.listdir(dir):
             newdir = os.path.join(dir, s)
             get_img_list(newdir, firelist, ext)
@@ -24,7 +24,7 @@ def read_img():
     imgall = []
     for imgpath in imglist:
         # print(imgpath)
-        imgname = os.path.split(imgpath)[1]  # 分离文件路径和文件名后获取文件名（包括了后缀名）
+        imgname = os.path.split(imgpath)[1] 
         print(imgname)
         img = cv2.imread(imgpath, cv2.IMREAD_COLOR)
         sift(img, imgname)
