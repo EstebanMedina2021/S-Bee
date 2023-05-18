@@ -9,7 +9,7 @@ def img_handle(img,outdir,i):
 
     image=cv2.imread(indir + '/' + img)
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    t, rst = cv2.threshold(gray, 150, 255, cv2.THRESH_BINARY_INV)  # 类型设置为cv2.THRESH_BINARY_INV，阈值设置为127
+    t, rst = cv2.threshold(gray, 150, 255, cv2.THRESH_BINARY_INV) 
 
     # dst = cv2.dilate(rst,kernel=1,anchor=None,iterations=None)
 
