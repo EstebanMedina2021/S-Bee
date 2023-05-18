@@ -7,12 +7,12 @@ import matplotlib.pyplot as plt
 
 def get_img_list(dir, firelist, ext=None):
     newdir = dir
-    if os.path.isfile(dir):  # 如果是文件
+    if os.path.isfile(dir):  
         if ext is None:
             firelist.append(dir)
         elif ext in dir[-3:]:
             firelist.append(dir)
-    elif os.path.isdir(dir):  # 如果是目录
+    elif os.path.isdir(dir):  
         for s in os.listdir(dir):
             newdir = os.path.join(dir, s)
             get_img_list(newdir, firelist, ext)
@@ -31,7 +31,7 @@ def read_img():
         # print(imgpath)
         imgpath1 = imglist1[i]
         imgpath2 = imglist2[i]
-        imgname1 = os.path.split(imgpath1)[1]  # 分离文件路径和文件名后获取文件名（包括了后缀名）
+        imgname1 = os.path.split(imgpath1)[1]  
         imgname2 = os.path.split(imgpath2)[1]
         print(imgname1)
         print(imgname2)
@@ -45,7 +45,7 @@ def read_img():
 
 
 def sift(img1,img2,imgname1):
-    #使用opencv叠加图片
+   
     # img1 = cv2.imread(yuantu)
     # img2 = cv2.imread(masktu, cv2.IMREAD_GRAYSCALE)
     # cv2.imwrite(imgname1,img2)
