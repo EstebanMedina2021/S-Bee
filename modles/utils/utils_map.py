@@ -650,7 +650,7 @@ def get_map(MINOVERLAP, draw_plot, score_threhold=0.5, path = './map_out'):
         if show_animation:
             cv2.destroyAllWindows()
         if n_classes == 0:
-            print("未检测到任何种类，请检查标签信息与get_map.py中的classes_path是否修改。")
+            print("。")
             return 0
         results_file.write("\n# mAP of all classes\n")
         mAP     = sum_AP / n_classes
@@ -811,10 +811,7 @@ def preprocess_gt(gt_path, class_names):
         image['file_name'] = image_id + '.jpg'
         image['width']     = 1
         image['height']    = 1
-        #-----------------------------------------------------------------#
-        #   感谢 多学学英语吧 的提醒
-        #   解决了'Results do not correspond to current coco set'问题
-        #-----------------------------------------------------------------#
+       
         image['id']        = str(image_id)
 
         for line in lines_list:
@@ -910,7 +907,7 @@ def get_coco_map(class_names, path):
         results_dr  = preprocess_dr(DR_PATH, class_names)
         json.dump(results_dr, f, indent=4)
         if len(results_dr) == 0:
-            print("未检测到任何目标。")
+            print("No targets detected。")
             return [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 
     cocoGt      = COCO(GT_JSON_PATH)
