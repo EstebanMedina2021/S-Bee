@@ -164,7 +164,7 @@ class VGGNet(VGG):
                 param.requires_grad = False
 
         # delete redundant fully-connected layer params, can save memory
-        # 去掉vgg最后的全连接层(classifier)
+       
         if remove_fc:  
             del self.classifier
 
@@ -192,7 +192,7 @@ ranges = {
 }
 
 # Vgg-Net config 
-# Vgg网络结构配置
+
 cfg = {
     'vgg11': [64, 'M', 128, 'M', 256, 256, 'M', 512, 512, 'M', 512, 512, 'M'],
     'vgg13': [64, 64, 'M', 128, 128, 'M', 256, 256, 'M', 512, 512, 'M', 512, 512, 'M'],
@@ -201,7 +201,7 @@ cfg = {
 }
 
 # make layers using Vgg-Net config(cfg)
-# 由cfg构建vgg-Net
+
 def make_layers(cfg, batch_norm=False):
     layers = []
     in_channels = 3
@@ -218,7 +218,7 @@ def make_layers(cfg, batch_norm=False):
     return nn.Sequential(*layers)
 
 '''
-VGG-16网络参数
+
 
 Sequential(
   (0): Conv2d(3, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
