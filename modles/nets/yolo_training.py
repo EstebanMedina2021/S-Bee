@@ -54,11 +54,11 @@ class IOUloss(nn.Module):
 
             center_dis = (torch.pow(pred[:, 0]-target[:, 0], 2) + torch.pow(pred[:, 1]-target[:,1], 2))  # center diagonal squared
 
-            dis_w = torch.pow(pred[:, 2]-target[:, 2], 2)  # 两个框的w欧式距离
-            dis_h = torch.pow(pred[:, 3]-target[:, 3], 2)  # 两个框的h欧式距离
+            dis_w = torch.pow(pred[:, 2]-target[:, 2], 2)  
+            dis_h = torch.pow(pred[:, 3]-target[:, 3], 2)  
 
-            C_w = torch.pow(c_br[:, 0]-c_tl[:, 0], 2) + 1e-7 # 包围框的w平方
-            C_h = torch.pow(c_br[:, 1]-c_tl[:, 1], 2) + 1e-7 # 包围框的h平方
+            C_w = torch.pow(c_br[:, 0]-c_tl[:, 0], 2) + 1e-7 
+            C_h = torch.pow(c_br[:, 1]-c_tl[:, 1], 2) + 1e-7 
 
             eiou = iou - (center_dis / convex_dis) - (dis_w / C_w) - (dis_h / C_h)
 
@@ -354,21 +354,13 @@ class YOLOLoss(nn.Module):
         #-------------------------------------------------------#
         matching_matrix         = torch.zeros_like(cost)
 
-        #------------------------------------------------------------#
-        #   选取iou最大的n_candidate_k个点
-        #   然后求和，判断应该有多少点用于该框预测
-        #   topk_ious           [num_gt, n_candidate_k]
-        #   dynamic_ks          [num_gt]
-        #   matching_matrix     [num_gt, fg_mask]
-        #------------------------------------------------------------#
+       
         n_candidate_k           = min(10, pair_wise_ious.size(1))
         topk_ious, _            = torch.topk(pair_wise_ious, n_candidate_k, dim=1)
         dynamic_ks              = torch.clamp(topk_ious.sum(1).int(), min=1)
         
         for gt_idx in range(num_gt):
-            #------------------------------------------------------------#
-            #   给每个真实框选取最小的动态k个点
-            #------------------------------------------------------------#
+           
             _, pos_idx = torch.topk(cost[gt_idx], k=dynamic_ks[gt_idx].item(), largest=False)
             matching_matrix[gt_idx][pos_idx] = 1.0
         del topk_ious, dynamic_ks, pos_idx
@@ -378,28 +370,18 @@ class YOLOLoss(nn.Module):
         #------------------------------------------------------------#
         anchor_matching_gt = matching_matrix.sum(0)
         if (anchor_matching_gt > 1).sum() > 0:
-            #------------------------------------------------------------#
-            #   当某一个特征点指向多个真实框的时候
-            #   选取cost最小的真实框。
-            #------------------------------------------------------------#
+          
             _, cost_argmin = torch.min(cost[:, anchor_matching_gt > 1], dim=0)
             matching_matrix[:, anchor_matching_gt > 1] *= 0.0
             matching_matrix[cost_argmin, anchor_matching_gt > 1] = 1.0
-        #------------------------------------------------------------#
-        #   fg_mask_inboxes  [fg_mask]
-        #   num_fg为正样本的特征点个数
-        #------------------------------------------------------------#
+     
         fg_mask_inboxes = matching_matrix.sum(0) > 0.0
         num_fg          = fg_mask_inboxes.sum().item()
 
-        #------------------------------------------------------------#
-        #   对fg_mask进行更新
-        #------------------------------------------------------------#
+       
         fg_mask[fg_mask.clone()] = fg_mask_inboxes
 
-        #------------------------------------------------------------#
-        #   获得特征点对应的物品种类
-        #------------------------------------------------------------#
+       
         matched_gt_inds     = matching_matrix[:, fg_mask_inboxes].argmax(0)
         gt_matched_classes  = gt_classes[matched_gt_inds]
 
