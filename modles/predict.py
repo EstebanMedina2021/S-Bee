@@ -10,7 +10,7 @@ from yolo import YOLO
 if __name__ == "__main__":
     yolo = YOLO()
    
-    mode = "dir_predict"
+    mode = "video"
   
     crop            = False
     count           = False
@@ -18,14 +18,11 @@ if __name__ == "__main__":
     video_path      = 0
     video_save_path = ""
     video_fps       = 25.0
-  
-    test_interval   = 100
-    fps_image_path  = "img/1.jpg"
    
     dir_origin_path = "MASK/"
+    
     dir_save_path   = "img_out/"
     
-    heatmap_save_path = "model_data/heatmap_vision.png"
    
     simplify        = True
     onnx_save_path  = "model_data/models.onnx"
@@ -33,7 +30,7 @@ if __name__ == "__main__":
     if mode == "predict":
        
         while True:
-            img = input('Input image filename:')
+            img = 'direct_predict/'
             try:
                 image = Image.open(img)
             except:
@@ -45,7 +42,7 @@ if __name__ == "__main__":
 
     elif mode == "video":
         capture = cv2.VideoCapture(video_path)
-        if video_save_path!="":
+        if video_save_path!="" and video_save_path==0:
             fourcc  = cv2.VideoWriter_fourcc(*'XVID')
             size    = (int(capture.get(cv2.CAP_PROP_FRAME_WIDTH)), int(capture.get(cv2.CAP_PROP_FRAME_HEIGHT)))
             out     = cv2.VideoWriter(video_save_path, fourcc, video_fps, size)
@@ -70,7 +67,6 @@ if __name__ == "__main__":
             frame = cv2.cvtColor(frame,cv2.COLOR_RGB2BGR)
             
             fps  = ( fps + (1./(time.time()-t1)) ) / 2
-            print("fps= %.2f"%(fps))
             frame = cv2.putText(frame, "fps= %.2f"%(fps), (0, 40), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
             
             cv2.imshow("video",frame)
@@ -82,17 +78,11 @@ if __name__ == "__main__":
                 capture.release()
                 break
 
-        print("Video Detection Done!")
         capture.release()
         if video_save_path!="":
-            print("Save processed video to the path :" + video_save_path)
             out.release()
         cv2.destroyAllWindows()
-        
-    elif mode == "fps":
-        img = Image.open(fps_image_path)
-        tact_time = yolo.get_FPS(img, test_interval)
-        print(str(tact_time) + ' seconds, ' + str(1/tact_time) + 'FPS, @batch_size 1')
+
 
     elif mode == "dir_predict":
         import os
@@ -107,21 +97,6 @@ if __name__ == "__main__":
                 r_image     = yolo.detect_image(image)
                 if not os.path.exists(dir_save_path):
                     os.makedirs(dir_save_path)
-                r_image.save(os.path.join(dir_save_path, img_name.replace(".jpg", ".png")), quality=95, subsampling=0)
-
-    elif mode == "heatmap":
-        while True:
-            img = input('Input image filename:')
-            try:
-                image = Image.open(img)
-            except:
-                print('Open Error! Try again!')
-                continue
-            else:
-                yolo.detect_heatmap(image, heatmap_save_path)
-                
-    elif mode == "export_onnx":
-        yolo.convert_to_onnx(simplify, onnx_save_path)
-        
+                r_image.save(os.path.join(dir_save_path, img_name.replace(".jpg", ".png")), quality=95, subsampling=0) 
     else:
-        raise AssertionError("Please specify the correct mode: 'predict', 'video', 'fps', 'heatmap', 'export_onnx', 'dir_predict'.")
+        raise AssertionError("Please specify a mode")

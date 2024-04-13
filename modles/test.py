@@ -1,5 +1,3 @@
-#######t.py
-
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
@@ -7,60 +5,72 @@ from torchvision import transforms
 import os
 import cv2
 import matplotlib.pyplot as plt
-# from BagData import test_dataloader, train_dataloader
-from FCN import FCN8s, FCN16s, FCN32s, FCNs, VGGNet
 
-
+# Checks if a GPU is available and sets the device for computations (CPU or GPU)
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-print(device)
-model = torch.load('checkpoints/fcn_model.pt') 
+model = torch.load('checkpoints/fcn_model.pt', map_location=device) 
 model = model.to(device)
+
+# Convert images to tensors and normalize them for the model.
 transform = transforms.Compose([
     transforms.ToTensor(),
-    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
+    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+    ])
 
-def get_img_list(dir, firelist, ext=None):
-    newdir = dir
-    if os.path.isfile(dir): 
-        if ext is None:
-            firelist.append(dir)
-        elif ext in dir[-3:]:
-            firelist.append(dir)
-    elif os.path.isdir(dir):  
-        for s in os.listdir(dir):
-            newdir = os.path.join(dir, s)
-            get_img_list(newdir, firelist, ext)
 
-    return firelist
+def get_img_list(dir_path, ext=".jpg"):
+  """
+  Gets a list of image paths with a specified extension within a directory.
 
-def read_img():
-    image_path = './fill/'
-    imglist = get_img_list(image_path, [], 'jpg')
-    imgall = []
-    for imgpath in imglist:
-        # print(imgpath)
-        imgname = os.path.split(imgpath)[1] 
-        print(imgname)
-        img = cv2.imread(imgpath, cv2.IMREAD_COLOR)
+  Args:
+      dir_path (str): Path to the directory containing images.
+      ext (str, optional): The file extension of the images to search for.
+          Defaults to ".jpg".
+
+  Returns:
+      list: A list of image paths matching the criteria.
+  """
+
+  img_list = []
+  if os.path.isfile(dir_path):
+    if dir_path.endswith(ext):
+      img_list.append(dir_path)
+  elif os.path.isdir(dir_path):
+    for filename in os.listdir(dir_path):
+      full_path = os.path.join(dir_path, filename)
+      img_list.extend(get_img_list(full_path, ext))
+  return img_list
+
+
+def read_img(image_dir="./fill/"):
+  """
+  Reads all images with a specific extension from a directory.
+
+  Args:
+      image_dir (str, optional): Path to the directory containing images.
+          Defaults to "./data/".
+
+  Returns:
+      list: A list of loaded images as OpenCV cv2.Mat objects.
+  """
+
+  img_list = get_img_list(image_dir)
+  loaded_images = []
+  for img_path in img_list:
+    try:
+      img = cv2.imread(img_path, cv2.IMREAD_COLOR)
+      if img is not None:
+        imgname = os.path.split(img_path)[1] 
         sift(img, imgname)
-        imgall.append(img)
-        # cv2.namedWindow(imgname, cv2.WINDOW_AUTOSIZE)
-        # cv2.imshow(imgname, img)
-        # print(imgname, img.shape)
-    # cv2.waitKey(0)
-
-    return imgall
+        loaded_images.append(img)
+      else:
+        print(f"Error loading image: {img_path}")
+    except cv2.error as e:
+      print(f"OpenCV error: {e}")
+  return loaded_images
 
 def sift(img,i):
-    # img = cv2.imread('./Snapshot020.jpg')
-    # img=cv2.cvtColor(img,cv2.COLOR_BGR2RGB)
     if __name__ == '__main__':
-        # img_name = r'./test/0.jpg'  
-        # imgA = cv2.imread(img_name)
-        # print(imgA.shape)
-        # x, y = imgA.shape[0:2]
-        # imgA = cv2.resize(imgA, (int(y / 20), int(x / 20)))
-        print(img.shape)
         img = cv2.resize(img, (480, 480))
 
         img = transform(img)
@@ -70,24 +80,9 @@ def sift(img,i):
         output = torch.sigmoid(output)
 
         output_np = output.cpu().detach().numpy().copy()  # output_np.shape = (4, 2, 160, 160)
-        print(output_np.shape)  # (1, 2, 160, 160)
         output_np = np.argmin(output_np, axis=1)
-        print(output_np.shape)  # (1,160, 160)
         ret = np.squeeze(output_np[0, ...])
-
-        # plt.subplot(1, 2, 1)
-        # plt.imshow(np.squeeze(bag_msk_np[0, ...]), 'gray')
-        # plt.subplot(1, 2, 2)
-        # plt.imshow(ret, 'gray')
-        # plt.imshow(np.squeeze(output_np[0, ...]), 'gray')
-        plt.imsave('./test/' + (str)(i), ret)
-        # plt.show()
-    # plt.pause(3)
-    # cv2.imwrite('./result/' + (str)(i), ret)
-    # plt.imsave('./img/Snapshot001.jpg',constant)
-    # plt.show()
-    # cv2.waitKey(0)
-    # cv2.destroyAllWindows()
+        plt.imsave('./test/' + (str)(i), ret) # Save image segmentation
 
 if __name__ == '__main__':
     imgall = read_img()

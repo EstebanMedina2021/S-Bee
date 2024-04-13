@@ -1,18 +1,37 @@
-import numpy as np
 import cv2
 import os
-i = 0
-indir='./Binarization/'
-outdir='./expand'
-def img_handle(img,outdir,i):
-    image=cv2.imread(indir + img)
-    kernel=np.ones((40,40),np.uint8)
-    dilation=cv2.dilate(image,kernel)
+import numpy as np
 
-    cv2.imwrite(outdir + '/' + str(i),dilation)
+def apply_dilation(image_path, output_dir, filename, kernel_size=40, iterations=1):
+    """Applies dilation to an image with the given parameters.
 
-imlist=os.listdir(indir)
-for img in imlist:
-    imgname = os.path.split(img)[1]
-    print(imgname)
-    img_handle(img,outdir,imgname)
+    Args:
+        image_path (str): Path to the input image.
+        output_dir (str): Path to the output directory.
+        filename (str): Filename of the input image.
+        kernel_size (int, optional): Size of the kernel for dilation. Defaults to 40.
+        iterations (int, optional): Number of iterations for dilation. Defaults to 1.
+    """
+
+    try:
+        image = cv2.imread(image_path)
+        if image is None:
+            raise FileNotFoundError(f"Image not found: {image_path}")
+
+        kernel = np.ones((kernel_size, kernel_size), np.uint8)
+        dilated_image = cv2.dilate(image, kernel, iterations=iterations)
+
+        output_filename = f"dilated_{filename}"
+        cv2.imwrite(os.path.join(output_dir, output_filename), dilated_image)
+
+    except FileNotFoundError as e:
+        print(f"Error: {e}")
+
+if __name__ == "__main__":
+    input_dir = "./Binarization/"
+    output_dir = "./expand"
+    os.makedirs(output_dir, exist_ok=True)
+
+    for filename in os.listdir(input_dir):
+        image_path = os.path.join(input_dir, filename)
+        apply_dilation(image_path, output_dir, filename)

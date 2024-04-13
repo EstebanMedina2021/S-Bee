@@ -1,77 +1,51 @@
 import cv2
-from PIL import Image
-import numpy as np
 import os
-import matplotlib.pyplot as plt
+from tqdm import tqdm
 
+def get_img_list(dir_path, ext=".jpg"):
+    """
+    Gets a list of image paths with a specified extension within a directory.
 
-def get_img_list(dir, firelist, ext=None):
-    newdir = dir
-    if os.path.isfile(dir):  
-        if ext is None:
-            firelist.append(dir)
-        elif ext in dir[-3:]:
-            firelist.append(dir)
-    elif os.path.isdir(dir):  
-        for s in os.listdir(dir):
-            newdir = os.path.join(dir, s)
-            get_img_list(newdir, firelist, ext)
+    Args:
+        dir_path (str): Path to the directory containing images.
+        ext (str, optional): The file extension of the images to search for.
+            Defaults to ".jpg".
 
-    return firelist
+    Returns:
+        list: A list of image paths matching the criteria.
+    """
+    img_list = []
+    if os.path.isfile(dir_path) and dir_path.endswith(ext):
+        img_list.append(dir_path)
+    elif os.path.isdir(dir_path):
+        for root, _, files in os.walk(dir_path):
+            for file in files:
+                if file.endswith(ext):
+                    img_list.append(os.path.join(root, file))
+    return img_list
 
-def read_img():
-    image_path1 = './cut/'
-    image_path2 = './data/'
-    imglist1 = get_img_list(image_path1, [], 'jpg')
-    imglist2 = get_img_list(image_path2, [], 'jpg')
-    imgall1 = []
-    imgall2 = []
-    # print(imglist1)
-    for i in range(412):
-        # print(imgpath)
-        imgpath1 = imglist1[i]
-        imgpath2 = imglist2[i]
-        imgname1 = os.path.split(imgpath1)[1]  
-        imgname2 = os.path.split(imgpath2)[1]
-        print(imgname1)
-        print(imgname2)
+def read_img(image_path1='./cut/', image_path2='./data/'):
+    imglist1 = get_img_list(image_path1)
+    imglist2 = get_img_list(image_path2)
+    for imgpath1, imgpath2 in tqdm(zip(imglist1, imglist2), total=min(len(imglist1), len(imglist2))):
+        imgname1 = os.path.split(imgpath1)[1]
         img1 = cv2.imread(imgpath1, cv2.IMREAD_COLOR)
-        # img1 = cv2.resize(img1,(480,480))
         img2 = cv2.imread(imgpath2, cv2.IMREAD_COLOR)
-        sift(img1, img2,imgname1)
-        # imgall.append(img)
+        if img1 is not None and img2 is not None:
+            sift(img1, img2, imgname1)
 
-
-
-
-def sift(img1,img2,imgname1):
-   
-    # img1 = cv2.imread(yuantu)
-    # img2 = cv2.imread(masktu, cv2.IMREAD_GRAYSCALE)
-    # cv2.imwrite(imgname1,img2)
-    # img2= cv2.imread(imgname1)
-    alpha = 0.5
-    meta = 1 - alpha
-    gamma = 0
-    #cv2.imshow('img1', img1)
-    #cv2.imshow('img2', img2)
-    # image = cv2.addWeighted(img1,alpha,img2,meta,gamma)
-    # image = cv2.add(img1, img2)
-    # img2 = cv2.bitwise_not(img2)
-    #
-    #
-    #
-    # cv2.imshow('img2', img2)
-    #
-    # cv2.waitKey(0)
-    # cv2.destroyAllWindows()
+def sift(img1, img2, imgname1):
+  # Check if images have the same shape
+  if img1.shape != img2.shape:
+    # Resize img1 to match img2 size
+    img1_resized = cv2.resize(img1, dsize=(img2.shape[1], img2.shape[0]))
+    image = cv2.bitwise_and(img1_resized, img2)
+  else:
+    # Images have the same shape, perform bitwise AND directly
     image = cv2.bitwise_and(img1, img2)
 
-    # cv2.imshow('image', image)
+  # Save the resulting image
+  cv2.imwrite(f'./MASK/{imgname1}', image)
 
-    # cv2.waitKey(0)
-    # cv2.destroyAllWindows()
-
-    cv2.imwrite('./MASK/'+imgname1,image)
 if __name__ == '__main__':
-    imgall = read_img()
+    read_img()
