@@ -16,7 +16,7 @@ class YOLO(object):
         "classes_path"      : 'model_data/voc_classes.txt',
         "input_shape"       : [640, 640],
         "phi"               : 's',
-        "confidence"        : 0.5,
+        "confidence"        : 0.7,
         "nms_iou"           : 0.3,
         "letterbox_image"   : True,
         "cuda"              : False,
@@ -55,13 +55,27 @@ class YOLO(object):
                 self.net = nn.DataParallel(self.net)
                 self.net = self.net.cuda()
 
-    def detect_image(self, image, crop=False, count=True, supervision=False):
+    def detect_image(self, image, supervision=False):
+        #---------------------------------------------------#
+        # Get the height and width of the input image
+        #---------------------------------------------------#
         image_shape = np.array(np.shape(image)[0:2])
 
+        #---------------------------------------------------------#
+        # Convert the image to an RGB image here to prevent greyscale maps from reporting errors in the prediction.
+        # The code only supports prediction of RGB images, all other types of images are converted to RGB.
+        #---------------------------------------------------------#
         image = cvtColor(image)
 
+        #---------------------------------------------------------#
+        # Add grey bars to the image to achieve undistorted resize
+        # Can also resize directly for recognition
+        #---------------------------------------------------------#
         image_data = resize_image(image, (self.input_shape[1], self.input_shape[0]), self.letterbox_image)
 
+        #---------------------------------------------------------#
+        # Add the batch_size dimension.
+        #---------------------------------------------------------#
         image_data = np.expand_dims(np.transpose(preprocess_input(np.array(image_data, dtype='float32')), (2, 0, 1)), 0)
 
         font_path = 'model_data/Roboto-Black.ttf'
@@ -74,10 +88,16 @@ class YOLO(object):
             images = torch.from_numpy(image_data)
             if self.cuda:
                 images = images.cuda()
-
+            
+            #---------------------------------------------------------#
+            # Feed the image into the network for prediction!
+            #---------------------------------------------------------#
             outputs = self.net(images)
             outputs = decode_outputs(outputs, self.input_shape)
 
+            #---------------------------------------------------------#
+            # Stack the prediction frames and then perform non-great suppression
+            #---------------------------------------------------------#
             results = non_max_suppression(outputs, 
                                           self.num_classes, 
                                           self.input_shape, 
@@ -95,32 +115,8 @@ class YOLO(object):
         # Convert predicted class names to numeric IDs
         predicted_classes = [class_name_to_id[self.class_names[int(Bee)]] for i, Bee in enumerate(top_label)]
 
-
-        font = ImageFont.truetype(font_path, font_size)
         thickness = int(max((image.size[0] + image.size[1]) // np.mean(self.input_shape), 1))
 
-        if count:
-            classes_nums = np.zeros([self.num_classes])
-            for i in range(self.num_classes):
-                num = np.sum(top_label == i)
-                if num > 0:
-                    print(self.class_names[i], " : ", num)
-                    classes_nums[i] = num
-        if crop:
-            for i, c in list(enumerate(top_label)):
-                top, left, bottom, right = top_boxes[i]
-                top = max(0, np.floor(top).astype('int32'))
-                left = max(0, np.floor(left).astype('int32'))
-                bottom = min(image.size[1], np.floor(bottom).astype('int32'))
-                right = min(image.size[0], np.floor(right).astype('int32'))
-
-                dir_save_path = "img_crop"
-                if not os.path.exists(dir_save_path):
-                    os.makedirs(dir_save_path)
-                crop_image = image.crop([left, top, right, bottom])
-                crop_image.save(os.path.join(dir_save_path, "crop_" + str(i) + ".png"), quality=95, subsampling=0)
-                print("save crop_" + str(i) + ".png to " + dir_save_path)
-        boxes = []
         for i, Bee in list(enumerate(top_label)):
             predicted_class = self.class_names[int(Bee)]
             box = top_boxes[i]
@@ -130,7 +126,6 @@ class YOLO(object):
             left = max(0, np.floor(left).astype('int32'))
             bottom = min(image.size[1], np.floor(bottom).astype('int32'))
             right = min(image.size[0], np.floor(right).astype('int32'))
-            boxes = [top, left, bottom, right]
 
             label = '{} {:.2f}'.format(predicted_class, score)
 
@@ -161,7 +156,7 @@ class YOLO(object):
         else:
             if len(top_conf) > 0:
                 detections = [
-                    boxes,
+                    box,
                     np.array([top_conf[0]]),
                     np.array([predicted_classes[0]]),
                 ]

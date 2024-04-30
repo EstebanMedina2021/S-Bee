@@ -19,7 +19,12 @@ try:
     while cap.isOpened():
         ret, frame = cap.read()
         if ret:
-            _, buffer = cv2.imencode('.jpg', frame)
+            # Convert frame to grayscale
+            gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+
+            # Downscale the frame
+            resized_frame = cv2.resize(gray_frame, (320,320))
+            _, buffer = cv2.imencode('.jpg', gray_frame)
             # Concatenate sender ID and frame data
             data_to_send = sender_id.encode() + b'_' + buffer.tobytes()
             sock.sendto(data_to_send, (MCAST_GRP, MCAST_PORT))

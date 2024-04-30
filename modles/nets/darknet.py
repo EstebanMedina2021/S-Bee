@@ -74,7 +74,7 @@ class SPPBottleneck(nn.Module):
         return x
 
 #--------------------------------------------------#
-#   残差结构的构建，小的残差结构
+#   Construction of residual structures, small residual structures
 #--------------------------------------------------#
 class Bottleneck(nn.Module):
     # Standard bottleneck
@@ -83,11 +83,11 @@ class Bottleneck(nn.Module):
         hidden_channels = int(out_channels * expansion)
         Conv = DWConv if depthwise else BaseConv
         #--------------------------------------------------#
-        #   利用1x1卷积进行通道数的缩减。缩减率一般是50%
+        #   Reduction of the number of channels using 1x1 convolution. Reduction is typically 50 per cent
         #--------------------------------------------------#
         self.conv1 = BaseConv(in_channels, hidden_channels, 1, stride=1, act=act)
         #--------------------------------------------------#
-        #   利用3x3卷积进行通道数的拓张。并且完成特征提取
+        #   Use 3x3 convolution for channel count topology. And complete feature extraction
         #--------------------------------------------------#
         self.conv2 = Conv(hidden_channels, out_channels, 3, stride=1, act=act)
         self.use_add = shortcut and in_channels == out_channels
@@ -104,44 +104,44 @@ class CSPLayer(nn.Module):
         super().__init__()
         hidden_channels = int(out_channels * expansion)  
         #--------------------------------------------------#
-        #   主干部分的初次卷积
+        #   Initial convolution of the trunk portion
         #--------------------------------------------------#
         self.conv1  = BaseConv(in_channels, hidden_channels, 1, stride=1, act=act)
         #--------------------------------------------------#
-        #   大的残差边部分的初次卷积
+        #   Initial convolution of large residual edge sections
         #--------------------------------------------------#
         self.conv2  = BaseConv(in_channels, hidden_channels, 1, stride=1, act=act)
         #-----------------------------------------------#
-        #   对堆叠的结果进行卷积的处理
+        #   Convolution of the stacked results
         #-----------------------------------------------#
         self.conv3  = BaseConv(2 * hidden_channels, out_channels, 1, stride=1, act=act)
 
         #--------------------------------------------------#
-        #   根据循环的次数构建上述Bottleneck残差结构
+        #   Construction of the above Bottleneck residual structure based on the number of cycles
         #--------------------------------------------------#
         module_list = [Bottleneck(hidden_channels, hidden_channels, shortcut, 1.0, depthwise, act=act) for _ in range(n)]
         self.m      = nn.Sequential(*module_list)
 
     def forward(self, x):
         #-------------------------------#
-        #   x_1是主干部分
+        #   x_1 is the trunk portion
         #-------------------------------#
         x_1 = self.conv1(x)
         #-------------------------------#
-        #   x_2是大的残差边部分
+        #   x_2 is the large residual edge portion 
         #-------------------------------#
         x_2 = self.conv2(x)
 
         #-----------------------------------------------#
-        #   主干部分利用残差结构堆叠继续进行特征提取
+        #   Trunk part continues feature extraction using residual structure stacking
         #-----------------------------------------------#
         x_1 = self.m(x_1)
         #-----------------------------------------------#
-        #   主干部分和大的残差边部分进行堆叠
+        #   Trunk and large residual edge are stacked.
         #-----------------------------------------------#
         x = torch.cat((x_1, x_2), dim=1)
         #-----------------------------------------------#
-        #   对堆叠的结果进行卷积的处理
+        #   Convolution is performed on the stacked results
         #-----------------------------------------------#
         return self.conv3(x)
 
@@ -153,21 +153,21 @@ class CSPDarknet(nn.Module):
         Conv = DWConv if depthwise else BaseConv
 
         #-----------------------------------------------#
-        #   输入图片是640, 640, 3
-        #   初始的基本通道是64
+        #   The input image is 640, 640, 3
+        #   The initial base channel is 64
         #-----------------------------------------------#
         base_channels   = int(wid_mul * 64)  # 64
         base_depth      = max(round(dep_mul * 3), 1)  # 3
         
         #-----------------------------------------------#
-        #   利用focus网络结构进行特征提取
+        #   Use focus network structure for feature extraction
         #   640, 640, 3 -> 320, 320, 12 -> 320, 320, 64
         #-----------------------------------------------#
         self.stem = Focus(3, base_channels, ksize=3, act=act)
 
         #-----------------------------------------------#
-        #   完成卷积之后，320, 320, 64 -> 160, 160, 128
-        #   完成CSPlayer之后，160, 160, 128 -> 160, 160, 128
+        #   After completing convolution, 320, 320, 64 -> 160, 160, 128
+        #   After CSPlayer, 160, 160, 128 -> 160, 160, 128
         #-----------------------------------------------#
         self.dark2 = nn.Sequential(
             Conv(base_channels, base_channels * 2, 3, 2, act=act),
@@ -175,8 +175,8 @@ class CSPDarknet(nn.Module):
         )
 
         #-----------------------------------------------#
-        #   完成卷积之后，160, 160, 128 -> 80, 80, 256
-        #   完成CSPlayer之后，80, 80, 256 -> 80, 80, 256
+        #   After convolution, 160, 160, 128 -> 80, 80, 256
+        #   After CSPlayer, 80, 80, 256 -> 80, 80, 256
         #-----------------------------------------------#
         self.dark3 = nn.Sequential(
             Conv(base_channels * 2, base_channels * 4, 3, 2, act=act),
@@ -184,8 +184,8 @@ class CSPDarknet(nn.Module):
         )
 
         #-----------------------------------------------#
-        #   完成卷积之后，80, 80, 256 -> 40, 40, 512
-        #   完成CSPlayer之后，40, 40, 512 -> 40, 40, 512
+        #   After convolution, 80, 80, 256 -> 40, 40, 512
+        #   After CSPlayer, 40, 40, 512 -> 40, 40, 512
         #-----------------------------------------------#
         self.dark4 = nn.Sequential(
             Conv(base_channels * 4, base_channels * 8, 3, 2, act=act),
@@ -193,9 +193,9 @@ class CSPDarknet(nn.Module):
         )
 
         #-----------------------------------------------#
-        #   完成卷积之后，40, 40, 512 -> 20, 20, 1024
-        #   完成SPP之后，20, 20, 1024 -> 20, 20, 1024
-        #   完成CSPlayer之后，20, 20, 1024 -> 20, 20, 1024
+        #   After convolution, 40, 40, 512 -> 20, 20, 1024
+        #   After SPP, 20, 20, 1024 -> 20, 20, 1024
+        #   After completing CSPlayer, 20, 20, 1024 -> 20, 20, 1024
         #-----------------------------------------------#
         self.dark5 = nn.Sequential(
             Conv(base_channels * 8, base_channels * 16, 3, 2, act=act),
@@ -210,17 +210,17 @@ class CSPDarknet(nn.Module):
         x = self.dark2(x)
         outputs["dark2"] = x
         #-----------------------------------------------#
-        #   dark3的输出为80, 80, 256，是一个有效特征层
+        #  dark3's output is 80, 80, 256 and is a valid feature layer
         #-----------------------------------------------#
         x = self.dark3(x)
         outputs["dark3"] = x
         #-----------------------------------------------#
-        #   dark4的输出为40, 40, 512，是一个有效特征层
+        #   The output of dark4 is 40, 40, 512, a valid feature layer
         #-----------------------------------------------#
         x = self.dark4(x)
         outputs["dark4"] = x
         #-----------------------------------------------#
-        #   dark5的输出为20, 20, 1024，是一个有效特征层
+        #   The output of dark5 is 20, 20, 1024, a valid feature layer
         #-----------------------------------------------#
         x = self.dark5(x)
         outputs["dark5"] = x
